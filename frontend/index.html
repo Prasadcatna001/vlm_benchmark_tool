@@ -1,1 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Pipeline Runner</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <h1>LTX / WAN Pipeline Runner</h1>
+    <a class="button" href="/new">+ New Run</a>
+  </header>
+  <main>
+    <div id="runs"></div>
+  </main>
 
+<script>
+async function load() {
+  const res = await fetch('/api/runs');
+  const runs = await res.json();
+  const container = document.getElementById('runs');
+  if (runs.length === 0) {
+    container.innerHTML = '<p class="muted">No runs yet. Click "New Run" to start comparing pipelines.</p>';
+    return;
+  }
+  container.innerHTML = runs.map(r => `
+    <a class="run-row" href="/run/${r.run_id}">
+      <div>
+        <div><b>${r.label || r.run_id}</b> <span class="muted">· ${r.model}</span></div>
+        <div class="muted">${r.prompt.slice(0, 80)}${r.prompt.length > 80 ? '…' : ''}</div>
+        <div class="muted">${r.pipelines.join(', ')}</div>
+      </div>
+      <div style="text-align:right">
+        <span class="badge ${r.status}">${r.status}</span>
+        <div class="muted">${new Date(r.created_at).toLocaleString()}</div>
+      </div>
+    </a>
+  `).join('');
+}
+load();
+</script>
+</body>
+</html>

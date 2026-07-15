@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Run Detail</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <h1 id="title">Run</h1>
+    <a class="button" href="/" style="background:#374151;">← Home</a>
+  </header>
+  <main>
+    <p class="muted" id="meta"></p>
+    <div id="jobs"></div>
+    <p style="margin-top:20px;">
+      <a class="button" id="reportLink" target="_blank">Open full HTML report ↗</a>
+    </p>
+  </main>
+
+<script>
+const runId = window.location.pathname.split('/').pop();
+
+async function load() {
+  const res = await fetch(`/api/runs/${runId}`);
+  if (!res.ok) { document.getElementById('meta').textContent = 'Run not found.'; return; }
+  const r = await res.json();
+
+  document.getElementById('title').textContent = r.label || r.run_id;
+  document.getElementById('meta').textContent =
+    `${r.model.toUpperCase()} · ${r.execution_mode} · "${r.prompt}" · ${r.status}`;
+  document.getElementById('reportLink').href = `/runs-files/${r.run_id}/report.html`;
+
+  document.getElementById('jobs').innerHTML = r.jobs.map(j => `
+    <div class="run-row" style="cursor:default;">
+      <div>
+        <b>${j.display_name}</b> <span class="muted">on ${j.node_id}</span>
+        ${j.error ? `<div class="muted" style="color:#f87171;">${j.error}</div>` : ''}
+      </div>
+      <div style="text-align:right">
+        <span class="badge ${j.status}">${j.status}</span>
+        <div class="muted">${j.duration_seconds ? j.duration_seconds.toFixed(1) + 's' : ''}
+          ${j.peak_memory_mb ? ' · ' + j.peak_memory_mb.toFixed(0) + ' MB peak' : ''}</div>
+      </div>
+    </div>
+  `).join('');
+
+  if (r.status === 'running' || r.status === 'pending') {
+    setTimeout(load, 3000);
+  }
+}
+load();
+</script>
+</body>
+</html>
