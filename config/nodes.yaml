@@ -1,0 +1,44 @@
+# Define each HPC node the orchestrator can SSH into.
+# key_path should point to a private key readable by the backend process.
+# workdir is where remote python -m ... commands are run from (so relative
+# checkpoint/output paths resolve correctly).
+
+nodes:
+  - id: node-a
+    host: 10.0.0.11
+    port: 22
+    user: hema
+    key_path: ~/.ssh/id_rsa
+    workdir: /home/hema/ltx
+    gpu_indices: [0]        # which physical GPU(s) this node exposes for jobs
+
+  - id: node-b
+    host: 10.0.0.12
+    port: 22
+    user: hema
+    key_path: ~/.ssh/id_rsa
+    workdir: /home/hema/ltx
+    gpu_indices: [0]
+
+  - id: node-c
+    host: 10.0.0.13
+    port: 22
+    user: hema
+    key_path: ~/.ssh/id_rsa
+    workdir: /home/hema/ltx
+    gpu_indices: [0]
+
+  - id: node-d
+    host: 10.0.0.14
+    port: 22
+    user: hema
+    key_path: ~/.ssh/id_rsa
+    workdir: /home/hema/ltx
+    gpu_indices: [0]
+
+# Python environment activation. If you use conda/venv on the remote nodes,
+# put the activation command here; it's prepended to every job command.
+remote_env_activate: "source ~/miniconda3/bin/activate ltx"
+
+# How often to poll nvidia-smi on the node running a job, in seconds.
+gpu_poll_interval_seconds: 2
