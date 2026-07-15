@@ -1,10 +1,10 @@
-# STUB -- same params as two-stage plus an "unquantized"/HQ flag, guessing
-# the flag name. TODO: confirm real module + flag name from your command.
+# This one is filled in from the exact command you shared. Edit values/flags
+# freely -- the backend just builds `python -m <module> <flags...>` from this.
 
-name: ltx_hq_two_stage
-display_name: "LTX - Two Stage (HQ / unquantized)"
+name: ltx_two_stage
+display_name: "LTX - Two Stage"
 model: ltx
-module: ltx_pipelines.ti2vid_two_stages   # TODO: confirm - may be same module + a flag
+module: ltx_pipelines.ti2vid_two_stages
 
 params:
   - name: checkpoint_path
@@ -15,7 +15,7 @@ params:
 
   - name: distilled_lora
     flag: --distilled-lora
-    type: path_and_weight
+    type: path_and_weight     # emits: --distilled-lora <path> <weight>
     required: false
     default_path: "path/to/distilled_lora.safetensors"
     default_weight: 0.8
@@ -32,23 +32,17 @@ params:
     required: true
     default: "path/to/gemma"
 
-  - name: unquantized
-    flag: --unquantized        # TODO: confirm actual flag name (you said "unquantization")
-    type: bool_flag             # emits the flag with no value if true
-    required: false
-    default: true
-
   - name: prompt
     flag: --prompt
     type: string
     required: true
-    shared: true
+    shared: true              # this comes from the shared "one prompt" field in a run
 
   - name: output_path
     flag: --output-path
     type: path
     required: true
-    auto: true
+    auto: true                # backend fills this in per-run, per-pipeline
 
   - name: num_frames
     flag: --num-frames

@@ -1,0 +1,46 @@
+# STUB -- I don't have your actual one-stage command yet.
+# Guessing the module name and dropping lora/upsampler since you said
+# one-stage only needs checkpoint + gemma. Fix `module` and flags once
+# you paste the real command -- everything else in the app will just work.
+
+name: ltx_one_stage
+display_name: "LTX - One Stage"
+model: ltx
+module: ltx_pipelines.ti2vid_one_stage   # TODO: confirm real module path
+
+params:
+  - name: checkpoint_path
+    flag: --checkpoint-path
+    type: path
+    required: true
+    default: "path/to/checkpoint.safetensors"
+
+  - name: gemma_root
+    flag: --gemma-root
+    type: path
+    required: true
+    default: "path/to/gemma"
+
+  - name: prompt
+    flag: --prompt
+    type: string
+    required: true
+    shared: true
+
+  - name: output_path
+    flag: --output-path
+    type: path
+    required: true
+    auto: true
+
+  - name: num_frames
+    flag: --num-frames
+    type: int
+    required: false
+    default: null
+
+  - name: frame_rate
+    flag: --frame-rate
+    type: int
+    required: false
+    default: null
