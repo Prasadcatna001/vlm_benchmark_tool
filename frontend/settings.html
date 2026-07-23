@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Settings</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <h1>Settings</h1>
+    <div>
+      <a class="button" href="/" style="background:#374151;">← Home</a>
+      <a class="button" href="/new" style="background:#374151; margin-left:8px;">New Run</a>
+    </div>
+  </header>
+  <main>
+    <p class="muted">Configure one or more named model roots for auto-filling pipeline paths in the New Run form.</p>
+    <div id="configList"></div>
+    <button id="addConfigBtn" style="margin-top:12px;">+ Add model config</button>
+
+    <div style="margin-top:20px; display:flex; gap:10px; align-items:center;">
+      <button id="saveAllBtn">Save all</button>
+      <button id="clearAllBtn" style="background:#6b7280;">Clear all</button>
+      <span id="message" class="muted"></span>
+    </div>
+  </main>
+<script>
+function loadModelConfigs() {
+  try {
+    return JSON.parse(localStorage.getItem('modelPathConfigs') || '[]');
+  } catch {
+    return [];
+  }
+}
+
+function saveModelConfigs(configs) {
+  localStorage.setItem('modelPathConfigs', JSON.stringify(configs));
+}
+
+function createConfigRow(config = { model: '', path: '' }, index = 0) {
+  const row = document.createElement('div');
+  row.className = 'pipeline-block';
+  row.innerHTML = `
+    <div class="checkbox-row" style="justify-content:space-between;">
+      <strong>Model config</strong>
+      <div>
+        <button class="scanBtn">Scan</button>
+        <button class="removeBtn" style="background:#6b7280;">Remove</button>
+      </div>
+    </div>
+    <label>Model name</label>
+    <input type="text" class="modelName" value="${config.model}">
+    <label>Root path</label>
+    <input type="text" class="modelPath" value="${config.path}" placeholder="/mnt/models/ltx">
+    <div class="muted small" style="margin-top:8px;" data-index="${index}" id="scanResult_${index}"></div>
+  `;
+  return row;
+}
+
+function renderConfigList() {
+  const container = document.getElementById('configList');
+  container.innerHTML = '';
+  const configs = loadModelConfigs();
+  configs.forEach((config, index) => {
+    const row = createConfigRow(config, index);
+    attachConfigRowEvents(row, index);
+    container.appendChild(row);
+  });
+}
+
+function attachConfigRowEvents(row, index) {
+  const modelNameInput = row.querySelector('.modelName');
+  const modelPathInput = row.querySelector('.modelPath');
+  const removeBtn = row.querySelector('.removeBtn');
+  const scanBtn = row.querySelector('.scanBtn');
+  const scanResult = row.querySelector('.small');
+
+  removeBtn.addEventListener('click', () => {
+    const configs = loadModelConfigs();
+    configs.splice(index, 1);
+    saveModelConfigs(configs);
+    renderConfigList();
+  });
+
+  scanBtn.addEventListener('click', async () => {
+    const model = modelNameInput.value.trim();
+    const path = modelPathInput.value.trim();
+    if (!model || !path) {
+      scanResult.textContent = 'Enter both model and path before scanning.';
+      return;
+    }
+    scanResult.textContent = 'Scanning...';
+    try {
+      const res = await fetch('/api/scan-model-path', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model, path }),
+      });
+      if (!res.ok) {
+        scanResult.textContent = 'Scan failed: ' + await res.text();
+        return;
+      }
+      const data = await res.json();
+      const lines = [`Root: ${data.root_path}`];
+      for (const [name, value] of Object.entries(data.matches)) {
+        lines.push(`${name}: ${value || 'not found'}`);
+      }
+      scanResult.textContent = lines.join('\n');
+    } catch (error) {
+      scanResult.textContent = 'Scan error: ' + error.message;
+    }
+  });
+}
+
+function addConfigRow() {
+  const configs = loadModelConfigs();
+  configs.push({ model: '', path: '' });
+  saveModelConfigs(configs);
+  renderConfigList();
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  renderConfigList();
+  document.getElementById('addConfigBtn').addEventListener('click', (event) => {
+    event.preventDefault();
+    addConfigRow();
+  });
+  document.getElementById('saveAllBtn').addEventListener('click', () => {
+    const rows = Array.from(document.querySelectorAll('#configList .pipeline-block'));
+    const configs = rows.map((row) => ({
+      model: row.querySelector('.modelName').value.trim(),
+      path: row.querySelector('.modelPath').value.trim(),
+    })).filter((config) => config.model && config.path);
+    saveModelConfigs(configs);
+    document.getElementById('message').textContent = 'Saved.';
+    renderConfigList();
+  });
+  document.getElementById('clearAllBtn').addEventListener('click', () => {
+    saveModelConfigs([]);
+    renderConfigList();
+    document.getElementById('message').textContent = 'Cleared all configs.';
+  });
+});
+</script>
+</body>
+</html>

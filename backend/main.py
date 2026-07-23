@@ -5,7 +5,7 @@ from fastapi.responses import FileResponse
 from pathlib import Path
 
 from .models import RunCreateRequest
-from .pipeline_registry import load_all_pipelines
+from .pipeline_registry import load_all_pipelines, scan_model_path
 from . import storage, job_manager
 
 app = FastAPI(title="LTX/WAN Pipeline Runner")
@@ -27,6 +27,11 @@ def new_run_page():
     return FileResponse(FRONTEND_DIR / "new_run.html")
 
 
+@app.get("/settings")
+def settings_page():
+    return FileResponse(FRONTEND_DIR / "settings.html")
+
+
 @app.get("/run/{run_id}")
 def run_detail_page(run_id: str):
     return FileResponse(FRONTEND_DIR / "run_detail.html")
@@ -43,6 +48,22 @@ def api_nodes():
     from .pipeline_registry import load_nodes_config
     cfg = load_nodes_config()
     return [{"id": n["id"], "gpu_indices": n["gpu_indices"]} for n in cfg["nodes"]]
+
+
+@app.post("/api/scan-model-path")
+def api_scan_model_path(req: dict):
+    model = req.get("model")
+    path = req.get("path")
+    if not model or not path:
+        raise HTTPException(422, "Both model and path are required")
+    try:
+        return scan_model_path(model, path)
+    except FileNotFoundError as exc:
+        raise HTTPException(400, str(exc))
+    except KeyError as exc:
+        raise HTTPException(400, str(exc))
+    except Exception as exc:
+        raise HTTPException(500, f"Scan failed: {exc}")
 
 
 @app.get("/api/runs")
